@@ -1,372 +1,378 @@
-# seqing clojure
-Learning Clojure by writing a Clojure parser. In Clojure.
+# `cloJS` [![Clojars Project](https://img.shields.io/clojars/v/clojs.svg)](https://clojars.org/clojs)
+A library for Clojure to convert Clojure code to JavaScript. It combines the simplicity of Clojure syntax with the power of JavaScript libraries. So all the function calls are of JavaScript.
 
-### Introduction ###
+## Artifacts
+`clojs` artifacts are [released to Clojars](https://clojars.org/clojs/clojs).
 
-So you want to learn Clojure? Parse it. In Clojure. Oh and do it with *Monads*. At least that's how we do things in [GeekSkool][]. 
+If you are using Maven, add the following repository definition to your `pom.xml`:
+``` xml
+<repository>
+  <id>clojars.org</id>
+  <url>http://clojars.org/repo</url>
+</repository>
+```
 
-[GeekSkool]: http://geekskool.com
+### The Most Recent Release
+With Leiningen ![](https://clojars.org/clojs/latest-version.svg)
 
-GeekSkool is an intensive 3-month programme where programmers come to improve their skills. The preferred way that [Santosh Rajan][], the founder of GeekSkool, likes to do this is by throwing daunting challenges at the unsuspecting student. 
+With Maven:
+``` xml
+<dependency>
+  <groupId>clojs</groupId>
+  <artifactId>clojs</artifactId>
+  <version>0.1.4</version>
+</dependency>
+```
+## Dependencies
+### `node.js`
+* [Install via package manager](https://nodejs.org/en/download/package-manager/) **or**
+* [Download](https://nodejs.org/en/download/)
 
-[Santosh Rajan]: https://twitter.com/santoshrajan
+### `escodegen npm package`
+`npm`(node.js package manager) is installed with `node.js`. `escodegen` can be installed by typing:
 
-So we're going to learn Clojure by 'parsing' Clojure, using Clojure. But what exactly do we mean by 'parsing'? 
+```bash
+npm install escodegen
+```
 
-In this project, parsing means converting valid Clojure code into something called an *[Abstract Syntax Tree][]*, or AST for short.
+ in your terminal/command line.
 
-[Abstract Syntax Tree]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
+## Bugs and Enhancements
+Please open issues against the [cloJS repo on Github](https://github.com/puneetpahuja/cloJS/issues).
 
-Any piece of code can be represented as a tree of objects and operators and functions. Here is some simple Clojure code and the tree that represents it:
+## Mailing List
+Please ask questions on the [cloJS mailing list](https://groups.google.com/forum/#!forum/clojs).
+
+## Who is it for?
+This is for:
+  - JavaScript programmers who want to use simple LISP like syntax of clojure. All the JavaScript functions can be called.
+  - Clojure programmers who want to use JavaScript functions and libraries without learning JavaScript syntax.
+
+## Introduction
+You write Clojure syntax code using JavaScript functions and it is converted into JavaScript code.
+
+## Usage
+
+### clojs.clojs
+The namespace for code conversion in the `clojs` library is `clojs.clojs`.
+``` clojure
+(require '[clojs.clojs :refer [convert convert-string] :as cj])
+```
+Convert a code snippet as string with `convert-string`. It takes a string(Clojure code) and returns a string(JavaScript code):
 
 ```clojure
-(* 3 (+ 5 2))
+(convert-string "(def a 1)")
+=> const a = 1;
 ```
-![alt text][ast]
-
-[ast]: http://www.codeproject.com/KB/recipes/sota_expression_evaluator/simplified_ast.png
-
-Now we can hardly expect the parser to spit out an image like this - what we want is a data structure that represents this tree. In Clojure, that would be a map - of parents and children. Maps in Clojure look like this:
+Convert one or more files containing code with `convert`. It takes the path of each input file as a string and creates the equivalent JavaScript file(.js) in the same folder as the input file:
 
 ```clojure
-{key value}
-{parent [child1 child2 ...]}
+(convert "a.clj" "resources/b.clj")
+=> nil
+```
+This will create `a.js`in the folder where `a.clj` is present and `b.js` in the `resources` folder where `b.clj` is present.
+**Note:** If `a.js` or `b.js` are already present in the respective folders, they will be overwritten.
+
+Here's a [sample Clojure app that uses clojs](https://github.com/puneetpahuja/using-clojs)
+
+## Syntax
+Here is all the syntax that `clojs` supports:
+**Legend:** `a -> b` means `a` in Clojure is converted to `b` in JavaScript
+
+### Literals
+| Input literal type | Input            | Output           | Output literal type |
+| ------------------ | ---------------- | ---------------- | ------------------- |
+| String             | `"abc"`          | `'abc'`          | String              |
+| Number             | `123`, `123.456` | `123`, `123.456` | Number              |
+| Nil                | `nil`            | `null`           | Null                |
+| Boolean            | `true`, `false`  | `true`, `false`  | Boolean             |
+
+**Note**
+* `null` in JavaScript is `nil` in Clojure. 
+* Strings in Clojure use only `""` as delimiters.
+
+### Identifiers
+Identifiers like variable names, function names are converted as it is.
+**Note to Clojure programmers:** Do not use `-` in variable/function names like `string-length` because running the resulting JavaScript code will error out as JavaScript use infix notation and `-` is not allowed in identifiers. Use `_` instead like `string_length`.
+
+### Vectors -> Arrays
+```clojure
+["abc" 123 nil true false [1 2 3]]
+```
+->
+```javascript
+['abc', 123, null, true, false, [1, 2, 3]]
+```
+No commas in Clojure. Nesting is supported.
+
+### Maps -> Objects
+```clojure
+{"a" 1 "b" {10 "t" 20 "f"} c 3 "d" [1 2 3]}
+```
+->
+```javascript
+{'a': 1, 'b': { 10: 't', 20: 'f'}, c: 3, 'd': [1, 2, 3]}
+```
+No semicolons or commas in Clojure. Nesting is supported.
+
+**Note:** Literals, identifiers, vectors, objects are not supported at the top-level. They have to be inside parentheses.
+
+### `def` -> `const`
+```clojure
+(def a 1 b "xyz" c nil d true e [1 2 3] f a g {a 1})
+```
+->
+```javascript
+const a = 1, b = 'xyz', c = null, d = true, e = [1, 2, 3], f = a, g = {a: 1}
 ```
 
-If we look at the tree again, we see that:
+### Array element access and Object property access
+```clojure
+(def h e[0] i g.a j g["a"])
+```
+->
+```javascript
+const h = e[0], i = g.a, j = g['a'];
+```
+**Note:** Currently only 1D arrays are supported i.e. `a[1][2]` wont work.
 
-\+ has two children: 5 and 2
+### Operators
+#### Prefix Operators -> Binary Operators
+As Clojure uses prefix notation you can give any number of arguments to the operators. `clojs` requires them to be greater than or equal to two.
 
-\* has two children: 3, and \+ with two children 5 and 2
+| Input                      | Output                                   |
+| -------------------------- | ---------------------------------------- |
+| `(+ a b 1 1.2 c)`          | `a + b + 1 + 1.2 + c`                    |
+| `(- a b 1 1.2 c)`          | `a - b - 1 - 1.2 - c`                    |
+| `(* a b 1 1.2 c)`          | `a * b * 1 * 1.2 * c`                    |
+| `(/ a b 1 1.2 c)`          | `a / b / 1 / 1.2 / c`                    |
+| `(mod a b 1 1.2 c)`        | `a % b % 1 % 1.2 % c`                    |
+| `(< a b 1 1.2 c)`          | `a < b < 1 < 1.2 < c`                    |
+| `(<= a b 1 1.2 c)`         | `a <= b <= 1 <= 1.2 <= c`                |
+| `(> a b 1 1.2 c)`          | `a > b > 1 > 1.2 > c`                    |
+| `(>= a b 1 1.2 c)`         | `a >= b >= 1 >= 1.2 >= c`                |
+| `(= a b 1 1.2 c)`          | `a === b === 1 === 1.2 === c`            |
+| `(== a b 1 1.2 c)`         | `a == b == 1 == 1.2 == c`                |
+| `(!== a b 1 1.2 c)`        | `a !== b !== 1 !== 1.2 !== c`            |
+| `(!= a b 1 1.2 c)`         | `a != b != 1 != 1.2 != c`                |
+| `(in a b 1 1.2 c)`         | `a in b in 1 in 1.2 in c`                |
+| `(instanceof a b 1 1.2 c)` | `a instanceof b instanceof 1 instanceof 1.2 instanceof c` |
+| `(and a b 1 1.2 c)`        | `a && b && 1 && 1.2 && c`                |
+| `(or a b 1 1.2 c)`         | `a` &#124;&#124; `b` &#124;&#124; `1` &#124;&#124; `1.2` &#124;&#124; `c`                |
+| `(assign a b)`             | `a = b`       |
 
-This implies \+ could be mapped to a vector containing 5 and 2 (vector because there is an implicit order to the children, and also the Clojure convention is to put arguments in vectors): 
+#### Unary Operators
+
+| Input        | Output     |
+| ------------ | ---------- |
+| `(not a)`    | `!a`       |
+| `(typeof a)` | `typeof a` |
+
+### `if` statement
+```clojure
+(if (= n 0)
+  true
+  false)
+```
+```javascript
+if (n === 0)
+  true;
+else
+  false;
+```
+### Function Call
+```clojure
+(console.log 1 2 "abc" a b)
+```
+->
+
+```javascript
+console.log(1, 2, "abc", a, b);
+```
+No commas in Clojure.
+### Block Statement - `do`
 
 ```clojure
-{+ [5 2]}
+  (if (= 1 1)
+    (do (console.log "x :" x)
+        (console.log "y :" y)
+        (console.log "z :" z))
+    (do (console.log "a :" a)
+        (console.log "b :" b)
+        (console.log "c :" c))
 ```
 
-\* can then be mapped to a vector containing 3 and the afore-mentioned map: 
+->
+
+```javascript
+if (1 === 1) {
+        console.log('x :', x);
+        console.log('y :', y);
+        console.log('z :', z);;
+    } else {
+        console.log('a :', a);
+        console.log('b :', b);
+        console.log('c :', c);
+    }
+```
+
+### Function Definition - `defn`
 
 ```clojure
-{* [3 {+ [5 2]}]}
+(defn factorial [n]
+  (if (= n 0)
+    1
+    (* n (factorial (- n 1)))))
+```
+->
+
+```javascript
+const factorial = n => {
+    if (n === 0)
+        return 1;
+    else
+        return n * factorial(n - 1);
+};
 ```
 
-So 
+Return is implicit. The last statement is the return statement.
 
-![alt text][ast]
-
-[ast]: http://www.codeproject.com/KB/recipes/sota_expression_evaluator/simplified_ast.png
-
-is
+### Lambda -> Anonymous functions
 
 ```clojure
-{* [3 {+ [5 2]}]}
+(fn [x]
+  (console.log x)
+  (console.log (+ 5 x)))
 ```
 
-OK. So we are going to write a Clojure program that takes simple Clojure code as an input, and returns a map like the one above as the output, except with more helpful annotations. 
+->
 
-We'll start by breaking up the problem into small, solvable pieces. We are only going to parse a subset of Clojure, with the following language objects:
+```javascript
+x => {
+    console.log(x);
+    return console.log(5 + x);
+};
+```
 
-* Numbers
-* Strings
-* Symbols (Literals which generally name other objects)
-* Keywords (Symbols prefaced by ':' used especially in maps)
-* Identifiers (Symbols which are the names of functions defined in the program, and built-in functions)
-* Booleans (The symbols true and false)
-* Back-ticks, Tildes and Ampersands (so we can implement simple macros)
-* Parentheses
-* Square brackets
-* Operators
-* Vectors ([arg1 arg2..] We will ignore other types of collections for now)
-
-These objects and characters composed together, form S-expressions in the following format:
+### `let`
 
 ```clojure
-(func-name arg1 arg2 arg3...)
-```
-(Optionally, macro body expressions can start with back-ticks before the opening parens - but we'll get to that later)
-
-Function names can only be composed by the following in our subset of Clojure:
-
-* Operators
-* Keywords (when applied to maps, for example)
-* Identifiers
-
-Arguments can be composed by any of the following: 
-
-* Numbers
-* Strings
-* Symbols
-* Keywords
-* Booleans
-* Vectors 
-* Tildes (Prefaced to dereferencable symbols in the Macro-body - more later...)
-* Function names (functions can be passed as arguments)
-* S-expressions themselves (nested expression as in our example above)
-
-We will obviously have to parse the parentheses as well to understand where an expression begins, and where it ends.
-
-So let's start by just parsing these individual components and then move on to *composing* these parsers together to parse function names and arguments - using the Parser Monad.
-
-What exactly does a parser look like?
-
-A parser is a function that takes, say, a string as an input and returns two things:
-
-* A 'consumed' part
-* The rest of the string
-
-or 
-
-* nil
-
-if it doesn't find what it's looking for. 
-
-```haskell
-Parser :: String -> [Anything, String] | nil
+(fn [x]
+  (console.log x)
+  (let a 2 b 5)
+  (console.log (+ 5 x a b)))
 ```
 
-So a space parser could take 
+->
 
-" the rest of the string" 
+```javascript
+x => {
+    console.log(x);
+    let a = 2, b = 5;
+    return console.log(5 + x + a + b);
+};
+```
 
-and return 
-
-[" ", "the rest of the string"]
-
-"string without starting space" would just return `nil`.
-
-This is what it looks like in poorly written, non-idiomatic Clojure:
+### `return` statement
 
 ```clojure
-(defn parse-space [code]
-  (let [space (re-find #"^\s+" code)]
-    (if (nil? space)
-      nil
-      [space (extract space code)])))
+(return a)
 ```
-'Extract' here is a helper function that does exactly what it says on the tin.
+->
+```javascript
+return a;
+```
 
-Similarly,
+### `chaining`
 
 ```clojure
-(defn parse-newline [code]                                                                 
-    (if (= \newline (first code))                                                                           
-      [\newline (apply str (rest code))]
-      nil))
-
-(defn parse-number [code]
-  (let [number (re-find #"^[+-]?\d+[.]?[\d+]?" code)]
-    (if (nil? number)
-      nil
-      [(read-string number) (extract number code)])))
-
-(defn parse-string [code]
-  (let [string (last (re-find #"^\"([^\"]*)\"" code))]
-    (if (nil? string) 
-      nil
-      [string (apply str (drop (+ 2 (count string)) code))])))
-
-(defn parse-square-bracket [code]                                                                 
-  (let [char (first code)]                                                                                    
-    (if (= \[ char)                                                           
-      [char (extract char code)]                                              
-      nil)))
-
-(defn parse-close-square-bracket [code]
-  (let [char (first code)]
-    (if (= \] char)
-      [char (extract char code)]
-      nil)))
-
-(defn parse-round-bracket [code]
-  (let [char (first code)]
-    (if (= \( char)
-      [char (extract char code)]
-      nil)))
-      
-(defn parse-close-round-bracket [code]
-  (let [char (first code)]
-    (if (= \) char)
-      [char (extract char code)]
-      nil)))
+(.attr (.parent ($ this)) "id")
 ```
-So a whole host of simple parsers like this can be given the responsibility of parsing little pieces of the code such as numbers, strings, symbols and identifiers.
+->
+```javascript
+$(this).parent().attr('id');
+```
 
-We are going to combine little parsers like these to parse more complex structures - and this is where things get interesting.
-
-Cue *Monads*.
-
-Combining or *composing* functions is something we are very familiar with when it comes to, say, math.
-
-We can easily chain a series of mathematical functions such as these without worrying if the whole, [rube-goldberg][] structure will work or not.
-
-[rube-goldberg]: https://en.wikipedia.org/wiki/Rube_Goldberg_machine
-
-![txt][math]
-
-[math]: https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcRqCLnWDw9sfCf3RNptuSzaCnQdm6IhbsAeYj5Vh-2ddhuXPGBPEg
-
-In Clojure (with mythical 'sqrt' & 'sqr' functions), this would look like:
+### `cond` -> `if-else` chain
 
 ```clojure
-(/ (+ (- (+ x 1) (sqrt (sqr (- x 1)))) (sqrt (- (+ x 1) (sqrt (sqr (- x 1)))))) 4)
+(fn [x]
+  (cond
+    (is_array_member form) (do (get_array_member form) (+ 1 2))
+    (is_defn form)     (get_defn form)
+    (is_def form)      (get_const form)
+    (is_if form)       (get_if form)
+    (is_do form)       (get_do form)
+    (is_vec form)      (get_vec form)
+    (is_lambda form)   (get_lambda form)
+    (is_map_ds form)   (get_map_ds form)
+    (is_literal form)  (get_literal form)
+    (is_operator form) (get_operator form)
+    (is_fn_call form)  (get_fn_call form)
+    true             nil))
 ```
 
-No big deal.
+->
 
-This is because all these functions have similar *signatures*:
-
-```haskell
-Math-function1 :: Number -> Number            --takes a Number as input, returns a number as output
-Math-function2 :: Number -> Number -> Number  --takes two numbers as input, returns a number as output
+```javascript
+x => {
+    if (is_array_member(form)) {
+        get_array_member(form);
+        return 1 + 2;
+    } else if (is_defn(form))
+        return get_defn(form);
+    else if (is_def(form))
+        return get_const(form);
+    else if (is_if(form))
+        return get_if(form);
+    else if (is_do(form))
+        return get_do(form);
+    else if (is_vec(form))
+        return get_vec(form);
+    else if (is_lambda(form))
+        return get_lambda(form);
+    else if (is_map_ds(form))
+        return get_map_ds(form);
+    else if (is_literal(form))
+        return get_literal(form);
+    else if (is_operator(form))
+        return get_operator(form);
+    else if (is_fn_call(form))
+        return get_fn_call(form);
+    else if (true)
+        return null;
+};
 ```
 
-We immediately see that any function that takes two numbers and returns a number can easily be composed with another function and number. This combination will return a number, which can again be composed with yet another function which only takes one number as a parameter.
+### Macros
 
-(Math-func1 (Math-func2 (Math-func2 n1 n2) n3))
+```clojure
+(defmacro m-bind [mv mf]
+  (conj (list ~mv test) ~mf))
 
-We just have to be careful that the right *number* of parameters are passed to the corresponding function. This is easy enough to do with straight-forward syntax. Math-func1 always takes one parameter, and Math-func2 takes two. The + function takes two numbers, but the 'sqr' function takes only one.
-
-But what about functions that have dissimilar signatures? 
-
-```haskell
-Func1 :: String -> String       --takes a String, returns a String
-Func2 :: String -> Number       --takes a String, returns a Number
-Func3 :: String -> Boolean      --takes a String, returns a Boolean
+(m-bind mvv mff)
 ```
 
-Can we *compose* such functions with the same ease with which we compose math functions?
+->
 
-We would like to do something like this (switching to parenthesised parameter syntax here):
-
-```C
-Func1(parameter1) -> result1
-Func2(result1) -> result2
-Func3(result2) -> result3
+```javascript
+mff(mvv, test);
 ```
 
-Or,
+## Samples
 
-```C
-Func3(Func2(Func1(parameter1)))
-```
+You can see a converted sample containing all the syntax: [`all.clj`](https://github.com/puneetpahuja/cloJS/blob/master/samples/all.clj) -> [`all.js`](https://github.com/puneetpahuja/cloJS/blob/master/samples/all.js) 
 
-It's clear this won't work because Func3 expects a String, but Func2 returns a Number(of some kind).
+## Examples 
 
-What if we modified our functions to do something a little odd - they return their values, only in some kind of *box* (which could be an array, or list or anything, really):
+[A todo app written using cloJS.](https://github.com/puneetpahuja/todo_clojs)
 
-```haskell
-Func1 :: String -> Box[String]      --The return type is Box, we are showing the contents for clarity
-Func2 :: String -> Box[Number]
-Func3 :: String -> Box[Boolean]
-```
-Now all we need to do is modify the parameters to be boxes as well:
+## Components
 
-```haskell
-Func1 :: Box[String] -> Box[String]   --takes a Box, returns a Box
-Func2 :: Box[String] -> Box[Number]   --takes a Box, returns a Box
-Func3 :: Box[String] -> Box[Boolean]  --takes a Box, returns a Box
-```
+1. Ramshreyas's [seqingclojure](https://github.com/Ramshreyas/seqingclojure) - it makes the AST for the input code.
+2. `clojs` uses this AST to convert it into an equivalent JavaScript AST in JSON format.
+3. estool's npm package [escodegen](https://github.com/estools/escodegen) - it converts the JavaScript AST into JavaScript code.
 
-This almost works - we can legally pass the result of one function to another since each expects a box and spits out a box. But then Func3 which expects to find a string in the box ends up getting a box with a number. Each of our functions need strings in their boxes to work. 
+## License
 
-Ok, so what if:
-
-```haskell
-Func1 :: Box[Anything, String] -> Box[String, String]
-Func2 :: Box[Anything, String] -> Box[Number, String]
-Func3 :: Box[Anything, String] -> Box[Boolean, String]
-```
-
-Now our functions can be combined willy-nilly just like mathematical functions! 
-
-But wait a minute - this is crazy! Why distort and boxify my nice, straight-forward functions just because of this threading business? Why??
-
-Well, because, unlike imperative programs, a purely functional program is just that - a series of functions that are threaded into each other - one passing results to the next until the output of the program just pops out. And we all know that purely functional programs are the bees knees. That's why.
-
-In fact, apart from the simple, easy building-block functions that perform a well-defined and small part of the program's task, most of the (spaghetti) code we write are complicated functions whose only job is to take the result of one function and transform it appropriately for input into the next function. This code handles the *flow* of the program, and tends to be hard to grok and painful to maintain, as their internal logic is almost entirely dependent on the functions they connect together. We all know what happens when the internals of one function are very dependent on that of another - changes to one part spread with epidemic proportions and speed across the entire pogram.
-
-Wouldn't it be wonderful if we could *abstract* this glue code into a general form that allows us to thread functions with different signatures according to some general patterns? Then our code could just be composed of simple *worker* functions and a generic threading framework.
-
-Well, that's exactly what Monads do.
-
-But first, let's (almost) restore your simple, straight-forward functions to their (almost) non-boxy form and see if we can make things work in another, more clever way. 
-
-Let's step back from here:
-
-```haskell
-Func1 :: Box[Anything, String] -> Box[String, String]   --takes a Box, returns a Box
-Func2 :: Box[Anything, String] -> Box[Number, String]   --takes a Box, returns a Box
-Func3 :: Box[Anything, String] -> Box[Boolean, String]  --takes a Box, returns a Box
-```
-
-To here:
-
-```haskell
-Func1 :: String -> Box[String, String]      --takes a String, returns a Box
-Func2 :: String -> Box[Number, String]      --takes a String, returns a Box
-Func3 :: String -> Box[Boolean, String]     --takes a String, returns a Box
-```
-
-(Look familiar? This is like our parser, but not quite)
-
-Now let's just replace *box* with *M* (for Monadic Value), and String, Number, Boolean with a, b & c to be more general. 
-
-```haskell
-Func1 :: a -> Ma      --takes an a, returns a Monadic a (for now, think of this as 'Boxed' a)
-Func2 :: a -> Mb      --takes an a, returns a Monadic b
-Func3 :: b -> Mc      --takes a b, returns a Monadic c
-```
-So the only change to our functions is that they take 'regular' values and return *Monadic* values.
-
-Now, instead of just passing the result of one function to the next, lets create something called a *Monadic Bind* to thread the functions together.
-
-Now this is a little involved, so let's pay attention:
-
-```haskell
-M-bind :: M-value -> (fn :: value -> M-value) -> M-value  --take a Monadic value & a Monadic function, return a                                                           --Monadic value
-```
-So M-bind is a function that takes two parameters:
-
-* `M-value`, a Monadic value.
-* `(fn :: value -> M-value)`, A function which takes a value and returns a Monadic value
-
-And it returns:
-
-* `M-value`, a Monadic value.
-
-Let's write this out using Func1 & Func2 and we'll see why this is brilliant.
-
-But first, in Haskell (the motherlode of Monads), M-bind looks like this: `>>=` - let's use this representation, just to seem a bit more intelligent.
-
-```haskell
->>= :: M a -> (fn :: a -> M b) -> M b
-```
-So to M-bind two of our function together, we `>>=` them like so:
-
-```haskell
-Func1(a) >>= Func2
-```
-Func1 returns M a, so this expands to:
-
-```haskell
-Func1 :: a -> M a >>= Func2
-
-Func1 :: a -> M a >>= Func2 :: a -> M b
-
-M a >>= Func2 :: a -> M b
-```
-
-`>>=` is an *infix* operator, so the two expressions on each side of the operator are taken as parameters:
-
-```haskell
->>= :: M a -> Func2 -> M b
-
->>= M a -> Func2 :: a -> Mb
-```
-
-
-
-
-
-
+Released under the Eclipse Public License: <https://github.com/puneetpahuja/cloJS/blob/master/LICENSE>

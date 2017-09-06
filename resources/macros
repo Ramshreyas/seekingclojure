@@ -1,0 +1,5 @@
+(defmacro cond [test exec]
+  `(if ~test ~exec))
+
+(defmacro cond [test exec & rest]
+  `(if ~test ~exec (cond ~rest)))

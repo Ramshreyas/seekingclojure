@@ -8,9 +8,9 @@
 (null? 3)
 
 (defmacro m-bind [mv mf]
-  (conj (list ~mv test) mf))
+  (conj (list ~mv test) ~mf))
 
-(m-bind mv mf)
+(m-bind mvv mff)
 
 (defmacro defmonad [name mbind mresult]
   `(def ~name (list ~mbind ~mresult)))
